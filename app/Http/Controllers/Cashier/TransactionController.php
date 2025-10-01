@@ -1,5 +1,4 @@
 <?php
-
 // app/Http/Controllers/Cashier/TransactionController.php
 namespace App\Http\Controllers\Cashier;
 
@@ -65,4 +64,3 @@ class TransactionController extends Controller
         return view('cashier.transaction-detail', compact('order'));
     }
 }
-

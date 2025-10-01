@@ -11,17 +11,16 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $users = User::when($request->search, function ($query) use ($request) {
-                $query->where('name', 'like', "%{$request->search}%")
-                      ->orWhere('email', 'like', "%{$request->search}%");
-            })
-            ->when($request->role, function ($query) use ($request) {
-                $query->where('role', $request->role);
-            })
-            ->latest()
-            ->paginate(20);
+        $search = $request->get('search');
+        $role = $request->get('role');
 
-        return view('owner.users.index', compact('users'));
+        $users = User::when($search, fn($q) => $q->where('name', 'like', "%{$search}%")
+                                                  ->orWhere('email', 'like', "%{$search}%"))
+                     ->when($role, fn($q) => $q->where('role', $role))
+                     ->latest()
+                     ->paginate(20);
+
+        return view('owner.users.index', compact('users', 'search', 'role'));
     }
 
     public function create()
@@ -33,8 +32,8 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|min:8|confirmed',
             'role' => 'required|in:owner,cashier',
             'phone' => 'nullable|string|max:20',
         ]);
@@ -61,7 +60,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
-            'password' => 'nullable|string|min:8|confirmed',
+            'password' => 'nullable|min:8|confirmed',
             'role' => 'required|in:owner,cashier',
             'phone' => 'nullable|string|max:20',
         ]);
@@ -86,7 +85,7 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         if ($user->id === auth()->id()) {
-            return back()->with('error', 'You cannot delete yourself');
+            return back()->with('error', 'You cannot delete your own account');
         }
 
         $user->delete();

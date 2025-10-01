@@ -1,5 +1,4 @@
 <?php
-
 // app/Http/Controllers/Owner/DashboardController.php
 namespace App\Http\Controllers\Owner;
 
@@ -10,6 +9,7 @@ use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -24,105 +24,147 @@ class DashboardController extends Controller
             ->where('status', 'paid')
             ->sum('total');
 
-        // Total Orders
-        $totalOrders = Order::whereBetween('created_at', $dateRange)
-            ->count();
+        // Previous Period Revenue for comparison
+        $previousDateRange = $this->getPreviousDateRange($period);
+        $previousRevenue = Order::whereBetween('created_at', $previousDateRange)
+            ->where('status', 'paid')
+            ->sum('total');
+        
+        $revenueGrowth = $previousRevenue > 0 
+            ? (($totalRevenue - $previousRevenue) / $previousRevenue) * 100 
+            : 0;
 
-        // Total Customers
+        // Total Orders
+        $totalOrders = Order::whereBetween('created_at', $dateRange)->count();
+        $previousOrders = Order::whereBetween('created_at', $previousDateRange)->count();
+        $ordersGrowth = $previousOrders > 0 
+            ? (($totalOrders - $previousOrders) / $previousOrders) * 100 
+            : 0;
+
+        // Total Customers (unique)
         $totalCustomers = Order::whereBetween('created_at', $dateRange)
             ->distinct('customer_name')
             ->count('customer_name');
+        $previousCustomers = Order::whereBetween('created_at', $previousDateRange)
+            ->distinct('customer_name')
+            ->count('customer_name');
+        $customersGrowth = $previousCustomers > 0 
+            ? (($totalCustomers - $previousCustomers) / $previousCustomers) * 100 
+            : 0;
 
         // Average Order Value
         $avgOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
+        $previousAvgOrderValue = $previousOrders > 0 ? $previousRevenue / $previousOrders : 0;
+        $avgGrowth = $previousAvgOrderValue > 0 
+            ? (($avgOrderValue - $previousAvgOrderValue) / $previousAvgOrderValue) * 100 
+            : 0;
 
-        // Top Products
-        $topProducts = OrderItem::select('product_id', 'product_name', DB::raw('SUM(quantity) as total_quantity'), DB::raw('SUM(subtotal) as total_revenue'))
-            ->whereHas('order', function ($query) use ($dateRange) {
-                $query->whereBetween('created_at', $dateRange)
-                      ->where('status', 'paid');
-            })
-            ->groupBy('product_id', 'product_name')
-            ->orderByDesc('total_revenue')
-            ->take(5)
-            ->get();
-
-        // Revenue Trend (Last 7 days)
+        // Revenue Trend Data (Last 7 days)
         $revenueTrend = Order::where('status', 'paid')
             ->whereBetween('created_at', [now()->subDays(6)->startOfDay(), now()->endOfDay()])
-            ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(total) as revenue'))
+            ->selectRaw('DATE(created_at) as date, SUM(total) as revenue')
             ->groupBy('date')
             ->orderBy('date')
             ->get();
 
-        // Recent Transactions
-        $recentTransactions = Order::with('cashier')
-            ->latest()
-            ->take(5)
+        // Top Products
+        $topProducts = OrderItem::select('product_name', 'product_id')
+            ->selectRaw('SUM(quantity) as total_quantity')
+            ->selectRaw('SUM(subtotal) as total_revenue')
+            ->whereBetween('created_at', $dateRange)
+            ->groupBy('product_name', 'product_id')
+            ->orderByDesc('total_revenue')
+            ->limit(5)
+            ->with('product.category')
             ->get();
 
-        // Staff Performance
-        $staffPerformance = User::where('role', 'cashier')
-            ->withCount(['orders' => function ($query) use ($dateRange) {
-                $query->whereBetween('created_at', $dateRange);
-            }])
+        // Recent Transactions
+        $recentTransactions = Order::with(['items', 'cashier'])
+            ->latest()
+            ->limit(10)
             ->get();
 
         // Low Stock Products
-        $lowStockProducts = Product::where('stock', '<', 10)
+        $lowStockProducts = Product::where('stock', '<=', 10)
             ->where('is_available', true)
+            ->with('category')
             ->orderBy('stock')
-            ->take(5)
+            ->limit(5)
             ->get();
+
+        // Cashier Performance
+        $cashierPerformance = Order::where('status', 'paid')
+            ->whereBetween('created_at', $dateRange)
+            ->whereNotNull('cashier_id')
+            ->select('cashier_id')
+            ->selectRaw('COUNT(*) as total_orders')
+            ->selectRaw('SUM(total) as total_revenue')
+            ->groupBy('cashier_id')
+            ->with('cashier')
+            ->orderByDesc('total_revenue')
+            ->get();
+
+        // Pending Orders Count
+        $pendingOrders = Order::where('status', 'pending')->count();
 
         return view('owner.dashboard', compact(
             'totalRevenue',
+            'revenueGrowth',
             'totalOrders',
+            'ordersGrowth',
             'totalCustomers',
+            'customersGrowth',
             'avgOrderValue',
-            'topProducts',
+            'avgGrowth',
             'revenueTrend',
+            'topProducts',
             'recentTransactions',
-            'staffPerformance',
             'lowStockProducts',
+            'cashierPerformance',
+            'pendingOrders',
             'period'
         ));
     }
 
     private function getDateRange($period)
     {
-        switch ($period) {
-            case 'week':
-                return [now()->startOfWeek(), now()->endOfWeek()];
-            case 'month':
-                return [now()->startOfMonth(), now()->endOfMonth()];
-            case 'year':
-                return [now()->startOfYear(), now()->endOfYear()];
-            default: // today
-                return [now()->startOfDay(), now()->endOfDay()];
-        }
+        return match($period) {
+            'today' => [now()->startOfDay(), now()->endOfDay()],
+            'week' => [now()->startOfWeek(), now()->endOfWeek()],
+            'month' => [now()->startOfMonth(), now()->endOfMonth()],
+            'year' => [now()->startOfYear(), now()->endOfYear()],
+            default => [now()->startOfDay(), now()->endOfDay()],
+        };
+    }
+
+    private function getPreviousDateRange($period)
+    {
+        return match($period) {
+            'today' => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
+            'week' => [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()],
+            'month' => [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()],
+            'year' => [now()->subYear()->startOfYear(), now()->subYear()->endOfYear()],
+            default => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
+        };
     }
 
     public function transactions(Request $request)
     {
+        $status = $request->get('status', 'all');
+        $search = $request->get('search');
+
         $transactions = Order::with(['items', 'cashier'])
-            ->when($request->search, function ($query) use ($request) {
-                $query->where('order_number', 'like', "%{$request->search}%")
-                      ->orWhere('customer_name', 'like', "%{$request->search}%");
-            })
-            ->when($request->status, function ($query) use ($request) {
-                $query->where('status', $request->status);
-            })
-            ->when($request->date_from, function ($query) use ($request) {
-                $query->whereDate('created_at', '>=', $request->date_from);
-            })
-            ->when($request->date_to, function ($query) use ($request) {
-                $query->whereDate('created_at', '<=', $request->date_to);
+            ->when($status !== 'all', fn($q) => $q->where('status', $status))
+            ->when($search, function($q) use ($search) {
+                $q->where(function($query) use ($search) {
+                    $query->where('order_number', 'like', "%{$search}%")
+                          ->orWhere('customer_name', 'like', "%{$search}%");
+                });
             })
             ->latest()
             ->paginate(20);
 
-        return view('owner.transactions', compact('transactions'));
+        return view('owner.transactions', compact('transactions', 'status', 'search'));
     }
 
     public function showTransaction($orderId)
@@ -133,6 +175,3 @@ class DashboardController extends Controller
         return view('owner.transaction-detail', compact('order'));
     }
 }
-
-
-

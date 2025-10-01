@@ -1,3 +1,4 @@
+{{-- resources/views/customer/welcome.blade.php --}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -81,41 +82,51 @@
             <!-- Welcome Card -->
             <div class="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-white animate-slideUp" style="animation-delay: 0.2s;">
                 <div class="text-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Welcome! 👋</h2>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Welcome!</h2>
                     <p class="text-gray-600">Please enter your name to start ordering</p>
                 </div>
 
+                @if(session('error'))
+                    <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl">
+                        {{ session('error') }}
+                    </div>
+                @endif
+
                 <form action="{{ route('customer.start') }}" method="POST" class="space-y-6">
-    @csrf
-    <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Your Name</label>
-        <input 
-            type="text" 
-            name="customer_name" 
-            placeholder="e.g., John Doe"
-            required
-            class="w-full px-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-laidback-500 focus:ring-4 focus:ring-laidback-100 outline-none transition-all text-lg"
-        >
-    </div>
+                    @csrf
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Your Name</label>
+                        <input 
+                            type="text" 
+                            name="customer_name" 
+                            placeholder="e.g., John Doe"
+                            value="{{ old('customer_name') }}"
+                            required
+                            class="w-full px-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-laidback-500 focus:ring-4 focus:ring-laidback-100 outline-none transition-all text-lg @error('customer_name') border-red-500 @enderror"
+                        >
+                        @error('customer_name')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
 
-    <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Table Number (Optional)</label>
-        <input 
-            type="text" 
-            name="table_number" 
-            placeholder="e.g., Table 5"
-            class="w-full px-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-laidback-500 focus:ring-4 focus:ring-laidback-100 outline-none transition-all text-lg"
-        >
-    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Table Number (Optional)</label>
+                        <input 
+                            type="text" 
+                            name="table_number" 
+                            placeholder="e.g., Table 5"
+                            value="{{ old('table_number', $table ?? '') }}"
+                            class="w-full px-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-laidback-500 focus:ring-4 focus:ring-laidback-100 outline-none transition-all text-lg"
+                        >
+                    </div>
 
-    <button 
-        type="submit"
-        class="w-full bg-gradient-to-r from-laidback-500 to-laidback-600 hover:from-laidback-600 hover:to-laidback-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 text-lg"
-    >
-        Start Ordering 🍽️
-    </button>
-</form>
-
+                    <button 
+                        type="submit"
+                        class="w-full bg-gradient-to-r from-laidback-500 to-laidback-600 hover:from-laidback-600 hover:to-laidback-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 text-lg"
+                    >
+                        Start Ordering
+                    </button>
+                </form>
 
                 <!-- Features -->
                 <div class="mt-8 pt-6 border-t border-gray-200">
