@@ -85,35 +85,37 @@
                     <p class="text-gray-600">Please enter your name to start ordering</p>
                 </div>
 
-                <form action="/order/start" method="POST" class="space-y-6">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Your Name</label>
-                        <input 
-                            type="text" 
-                            name="customer_name" 
-                            placeholder="e.g., John Doe"
-                            required
-                            class="w-full px-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-laidback-500 focus:ring-4 focus:ring-laidback-100 outline-none transition-all text-lg"
-                        >
-                    </div>
+                <form action="{{ route('customer.start') }}" method="POST" class="space-y-6">
+    @csrf
+    <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Your Name</label>
+        <input 
+            type="text" 
+            name="customer_name" 
+            placeholder="e.g., John Doe"
+            required
+            class="w-full px-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-laidback-500 focus:ring-4 focus:ring-laidback-100 outline-none transition-all text-lg"
+        >
+    </div>
 
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Table Number (Optional)</label>
-                        <input 
-                            type="text" 
-                            name="table_number" 
-                            placeholder="e.g., Table 5"
-                            class="w-full px-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-laidback-500 focus:ring-4 focus:ring-laidback-100 outline-none transition-all text-lg"
-                        >
-                    </div>
+    <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Table Number (Optional)</label>
+        <input 
+            type="text" 
+            name="table_number" 
+            placeholder="e.g., Table 5"
+            class="w-full px-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-laidback-500 focus:ring-4 focus:ring-laidback-100 outline-none transition-all text-lg"
+        >
+    </div>
 
-                    <button 
-                        type="submit"
-                        class="w-full bg-gradient-to-r from-laidback-500 to-laidback-600 hover:from-laidback-600 hover:to-laidback-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 text-lg"
-                    >
-                        Start Ordering 🍽️
-                    </button>
-                </form>
+    <button 
+        type="submit"
+        class="w-full bg-gradient-to-r from-laidback-500 to-laidback-600 hover:from-laidback-600 hover:to-laidback-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 text-lg"
+    >
+        Start Ordering 🍽️
+    </button>
+</form>
+
 
                 <!-- Features -->
                 <div class="mt-8 pt-6 border-t border-gray-200">
