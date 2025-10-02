@@ -12,8 +12,6 @@ class RedirectIfAuthenticated
 {
     /**
      * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
     public function handle(Request $request, Closure $next, string ...$guards): Response
     {
@@ -21,7 +19,18 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                return redirect(RouteServiceProvider::HOME);
+                $user = Auth::guard($guard)->user();
+                
+                // Redirect berdasarkan role
+                if ($user->isOwner()) {
+                    return redirect()->route('owner.dashboard');
+                }
+                
+                if ($user->isCashier()) {
+                    return redirect()->route('cashier.dashboard');
+                }
+                
+                return redirect('/');
             }
         }
 

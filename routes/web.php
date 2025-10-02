@@ -46,13 +46,13 @@ require __DIR__.'/auth.php';
 Route::middleware(['auth', 'cashier'])->prefix('cashier')->name('cashier.')->group(function () {
     Route::get('/dashboard', [TransactionController::class, 'index'])->name('dashboard');
     Route::get('/transactions', [TransactionController::class, 'list'])->name('transactions');
-    Route::get('/transactions/{order}', [TransactionController::class, 'show'])->name('transactions.show');
+  Route::get('/transaction/{orderId}', [TransactionController::class, 'show'])->name('transaction.show');
     
     // Payment Routes
-    Route::get('/payment/{order}', [PaymentController::class, 'show'])->name('payment');
-    Route::post('/payment/{order}', [PaymentController::class, 'process'])->name('payment.process');
-    Route::get('/receipt/{order}', [PaymentController::class, 'receipt'])->name('receipt');
-    Route::get('/print/{order}', [PaymentController::class, 'print'])->name('print');
+    Route::get('/payment/{orderId}', [PaymentController::class, 'show'])->name('payment.show');
+    Route::post('/payment/{orderId}', [PaymentController::class, 'process'])->name('payment.process');
+    Route::get('/receipt/{orderId}', [PaymentController::class, 'receipt'])->name('receipt');
+    Route::get('/print-receipt/{orderId}', [PaymentController::class, 'print'])->name('print-receipt');
 });
 
 // Owner Routes

@@ -99,7 +99,7 @@
 
 <!-- Charts & Top Products -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-    <!-- Revenue Chart -->
+    <!-- Revenue Chart - FIXED: Added container with fixed height -->
     <div class="bg-white rounded-2xl p-6 shadow-md">
         <div class="flex items-center justify-between mb-6">
             <div>
@@ -107,7 +107,9 @@
                 <p class="text-sm text-gray-500">Last 7 days performance</p>
             </div>
         </div>
-        <canvas id="revenueChart" height="250"></canvas>
+        <div style="height: 250px;">
+            <canvas id="revenueChart"></canvas>
+        </div>
     </div>
 
     <!-- Top Products -->
@@ -131,7 +133,7 @@
                     @endphp
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl flex items-center justify-center text-2xl">
-                            {{ $item->product->category->icon ?? 'ðŸ½ï¸' }}
+                            {{ $item->product->category->icon ?? '🍽️' }}
                         </div>
                         <div class="flex-1">
                             <p class="font-semibold text-gray-800">{{ $item->product_name }}</p>
@@ -203,7 +205,7 @@
                     <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-xl">
-                                {{ $product->category->icon ?? 'ðŸ½ï¸' }}
+                                {{ $product->category->icon ?? '🍽️' }}
                             </div>
                             <div>
                                 <p class="font-semibold text-gray-800 text-sm">{{ $product->name }}</p>
@@ -268,7 +270,7 @@ new Chart(ctx, {
     },
     options: {
         responsive: true,
-        maintainAspectRatio: false,
+        maintainAspectRatio: true,
         plugins: {
             legend: {
                 display: false

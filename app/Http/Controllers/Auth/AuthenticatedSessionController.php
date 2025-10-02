@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Providers\RouteServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,7 +28,19 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(RouteServiceProvider::HOME);
+        // Redirect berdasarkan role
+        $user = Auth::user();
+        
+        if ($user->isOwner()) {
+            return redirect()->intended(route('owner.dashboard'));
+        }
+        
+        if ($user->isCashier()) {
+            return redirect()->intended(route('cashier.dashboard'));
+        }
+
+        // Default redirect untuk role lain
+        return redirect()->intended(route('home'));
     }
 
     /**
