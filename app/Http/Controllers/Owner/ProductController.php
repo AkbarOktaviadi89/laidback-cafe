@@ -27,7 +27,7 @@ class ProductController extends Controller
         return view('owner.products.index', compact('products', 'categories', 'search', 'category'));
     }
 
-    public function create(): Factory|View
+    public function create()
     {
         $categories = Category::all();
         return view('owner.products.create', compact('categories'));
@@ -46,6 +46,9 @@ class ProductController extends Controller
 
         $data = $request->all();
         $data['slug'] = Str::slug($request->name);
+        
+        // Handle checkbox - jika tidak dicentang, set ke false
+        $data['is_available'] = $request->has('is_available') ? true : false;
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('products', 'public');
@@ -76,6 +79,9 @@ class ProductController extends Controller
 
         $data = $request->all();
         $data['slug'] = Str::slug($request->name);
+        
+        // PENTING: Handle checkbox - jika tidak dicentang, set ke false
+        $data['is_available'] = $request->has('is_available') ? true : false;
 
         if ($request->hasFile('image')) {
             if ($product->image) {

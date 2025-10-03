@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Cashier') - Laidback Cafe</title>
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -24,8 +25,25 @@
     </script>
 </head>
 <body class="bg-gray-50">
+    <!-- Mobile Menu Button -->
+    <button id="mobileMenuBtn" class="fixed top-4 left-4 z-50 lg:hidden bg-white p-3 rounded-xl shadow-lg">
+        <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+    </button>
+
+    <!-- Desktop Toggle Button -->
+    <button id="desktopToggleBtn" class="hidden lg:block fixed top-4 left-4 z-50 bg-white p-3 rounded-xl shadow-lg transition-all duration-300">
+        <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+    </button>
+
+    <!-- Overlay untuk mobile -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden"></div>
+
     <!-- Sidebar -->
-    <div class="fixed left-0 top-0 bottom-0 w-64 bg-gradient-to-b from-gray-900 to-gray-800 text-white z-50">
+    <div id="sidebar" class="fixed left-0 top-0 bottom-0 w-64 bg-gradient-to-b from-gray-900 to-gray-800 text-white z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
         <div class="p-6 border-b border-gray-700">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 bg-laidback-500 rounded-xl flex items-center justify-center">
@@ -78,7 +96,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="ml-64 p-8">
+    <div id="mainContent" class="lg:ml-64 p-8 transition-all duration-300">
         @if(session('success'))
             <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl">
                 {{ session('success') }}
@@ -93,5 +111,39 @@
 
         @yield('content')
     </div>
+
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const desktopToggleBtn = document.getElementById('desktopToggleBtn');
+        const mainContent = document.getElementById('mainContent');
+
+        // Mobile menu toggle
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        });
+
+        // Close sidebar when clicking overlay
+        overlay.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+        });
+
+        // Desktop sidebar toggle
+        desktopToggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+            mainContent.classList.toggle('lg:ml-64');
+            mainContent.classList.toggle('lg:ml-0');
+            
+            // Adjust button position
+            if (sidebar.classList.contains('-translate-x-full')) {
+                desktopToggleBtn.style.left = '1rem';
+            } else {
+                desktopToggleBtn.style.left = '1rem';
+            }
+        });
+    </script>
 </body>
 </html>

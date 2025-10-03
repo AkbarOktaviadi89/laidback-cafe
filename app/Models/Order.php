@@ -30,7 +30,7 @@ class Order extends Model
         parent::boot();
 
         static::creating(function ($order) {
-            $order->order_number = 'LB-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
+            $order->order_number = 'LB-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -3));
         });
     }
 

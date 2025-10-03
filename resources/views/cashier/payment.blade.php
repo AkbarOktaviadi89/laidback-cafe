@@ -94,7 +94,7 @@
 
     <!-- Payment Form -->
     <div class="space-y-6">
-        <form action="{{ route('cashier.payment.process', $order->id) }}" method="POST" id="paymentForm">
+        <form action="{{ route('cashier.payment.process', $order->id) }}" method="POST" id="paymentForm" onsubmit="return validatePayment()">
             @csrf
             
             <!-- Payment Method -->
@@ -131,13 +131,13 @@
                         name="amount_paid"
                         id="amountPaid"
                         placeholder="0"
-                        min="{{ $order->total }}"
-                        step="1000"
+                        step="1"
                         required
                         class="w-full text-4xl font-bold text-center py-4 px-6 bg-gray-50 border-2 border-gray-200 rounded-xl focus:border-laidback-500 focus:ring-4 focus:ring-laidback-100 outline-none"
                         oninput="calculateChange()"
                     >
                     <p class="text-center text-sm text-gray-500 mt-2">Enter amount received from customer</p>
+                    <p id="errorMessage" class="text-center text-sm text-red-600 mt-2 hidden"></p>
                 </div>
 
                 <!-- Quick Amount Buttons -->
@@ -148,15 +148,19 @@
                 </div>
 
                 <!-- Change Display -->
-                <div class="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 text-white">
+                <div id="changeDisplay" class="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 text-white">
                     <p class="text-sm opacity-90 mb-1">Change Amount</p>
                     <p class="text-4xl font-bold" id="changeAmount">Rp 0</p>
+                </div>
+                <div id="insufficientDisplay" class="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-6 text-white hidden">
+                    <p class="text-sm opacity-90 mb-1">Insufficient Payment</p>
+                    <p class="text-4xl font-bold" id="shortfallAmount">Rp 0</p>
                 </div>
             </div>
 
             <!-- Action Buttons -->
             <div class="bg-white rounded-2xl shadow-lg p-6">
-                <button type="submit" class="w-full bg-gradient-to-r from-laidback-500 to-laidback-600 hover:from-laidback-600 hover:to-laidback-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition text-lg flex items-center justify-center gap-2">
+                <button type="submit" id="submitButton" class="w-full bg-gradient-to-r from-laidback-500 to-laidback-600 hover:from-laidback-600 hover:to-laidback-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition text-lg flex items-center justify-center gap-2">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
@@ -194,8 +198,42 @@ function setAmount(amount) {
 
 function calculateChange() {
     const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
-    const change = Math.max(0, amountPaid - orderTotal);
-    document.getElementById('changeAmount').textContent = 'Rp ' + change.toLocaleString('id-ID');
+    const change = amountPaid - orderTotal;
+    
+    const changeDisplay = document.getElementById('changeDisplay');
+    const insufficientDisplay = document.getElementById('insufficientDisplay');
+    const submitButton = document.getElementById('submitButton');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    if (change >= 0) {
+        // Sufficient payment
+        changeDisplay.classList.remove('hidden');
+        insufficientDisplay.classList.add('hidden');
+        errorMessage.classList.add('hidden');
+        submitButton.disabled = false;
+        submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        document.getElementById('changeAmount').textContent = 'Rp ' + change.toLocaleString('id-ID');
+    } else {
+        // Insufficient payment
+        changeDisplay.classList.add('hidden');
+        insufficientDisplay.classList.remove('hidden');
+        errorMessage.classList.remove('hidden');
+        errorMessage.textContent = 'Amount must be at least Rp ' + orderTotal.toLocaleString('id-ID');
+        submitButton.disabled = true;
+        submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+        document.getElementById('shortfallAmount').textContent = 'Rp ' + Math.abs(change).toLocaleString('id-ID') + ' short';
+    }
+}
+
+function validatePayment() {
+    const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
+    
+    if (amountPaid < orderTotal) {
+        alert('Insufficient payment amount! Please enter at least Rp ' + orderTotal.toLocaleString('id-ID'));
+        return false;
+    }
+    
+    return true;
 }
 </script>
 @endsection

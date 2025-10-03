@@ -19,7 +19,7 @@ class DashboardController extends Controller
         
         $dateRange = $this->getDateRange($period);
 
-        // Total Revenue
+        // Total Revenue - ONLY PAID ORDERS
         $totalRevenue = Order::whereBetween('created_at', $dateRange)
             ->where('status', 'paid')
             ->sum('total');
@@ -34,20 +34,28 @@ class DashboardController extends Controller
             ? (($totalRevenue - $previousRevenue) / $previousRevenue) * 100 
             : 0;
 
-        // Total Orders
-        $totalOrders = Order::whereBetween('created_at', $dateRange)->count();
-        $previousOrders = Order::whereBetween('created_at', $previousDateRange)->count();
+        // Total Orders - Consider filtering by status if needed
+        $totalOrders = Order::whereBetween('created_at', $dateRange)
+            ->where('status', 'paid') // FIXED: Only count paid orders
+            ->count();
+        $previousOrders = Order::whereBetween('created_at', $previousDateRange)
+            ->where('status', 'paid') // FIXED: Only count paid orders
+            ->count();
         $ordersGrowth = $previousOrders > 0 
             ? (($totalOrders - $previousOrders) / $previousOrders) * 100 
             : 0;
 
-        // Total Customers (unique)
+        // Total Customers (unique) - FIXED: Use LOWER() for case-insensitive
         $totalCustomers = Order::whereBetween('created_at', $dateRange)
-            ->distinct('customer_name')
-            ->count('customer_name');
+            ->where('status', 'paid')
+            ->selectRaw('COUNT(DISTINCT LOWER(TRIM(customer_name))) as count')
+            ->value('count');
+            
         $previousCustomers = Order::whereBetween('created_at', $previousDateRange)
-            ->distinct('customer_name')
-            ->count('customer_name');
+            ->where('status', 'paid')
+            ->selectRaw('COUNT(DISTINCT LOWER(TRIM(customer_name))) as count')
+            ->value('count');
+            
         $customersGrowth = $previousCustomers > 0 
             ? (($totalCustomers - $previousCustomers) / $previousCustomers) * 100 
             : 0;
@@ -59,19 +67,22 @@ class DashboardController extends Controller
             ? (($avgOrderValue - $previousAvgOrderValue) / $previousAvgOrderValue) * 100 
             : 0;
 
-        // Revenue Trend Data (Last 7 days)
+        // FIXED: Revenue Trend Based on Selected Period
+        $revenueTrendRange = $this->getRevenueTrendRange($period);
         $revenueTrend = Order::where('status', 'paid')
-            ->whereBetween('created_at', [now()->subDays(6)->startOfDay(), now()->endOfDay()])
+            ->whereBetween('created_at', $revenueTrendRange)
             ->selectRaw('DATE(created_at) as date, SUM(total) as revenue')
             ->groupBy('date')
             ->orderBy('date')
             ->get();
 
-        // Top Products
+        // FIXED: Top Products - Only from PAID orders
         $topProducts = OrderItem::select('product_name', 'product_id')
-            ->selectRaw('SUM(quantity) as total_quantity')
-            ->selectRaw('SUM(subtotal) as total_revenue')
-            ->whereBetween('created_at', $dateRange)
+            ->selectRaw('SUM(order_items.quantity) as total_quantity')
+            ->selectRaw('SUM(order_items.subtotal) as total_revenue')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.status', 'paid') // FIXED: Only paid orders
+            ->whereBetween('order_items.created_at', $dateRange)
             ->groupBy('product_name', 'product_id')
             ->orderByDesc('total_revenue')
             ->limit(5)
@@ -145,6 +156,18 @@ class DashboardController extends Controller
             'month' => [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()],
             'year' => [now()->subYear()->startOfYear(), now()->subYear()->endOfYear()],
             default => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
+        };
+    }
+
+    // FIXED: New method for revenue trend range
+    private function getRevenueTrendRange($period)
+    {
+        return match($period) {
+            'today' => [now()->subDays(6)->startOfDay(), now()->endOfDay()], // Last 7 days
+            'week' => [now()->startOfWeek(), now()->endOfWeek()], // This week by day
+            'month' => [now()->startOfMonth(), now()->endOfMonth()], // This month
+            'year' => [now()->startOfYear(), now()->endOfYear()], // This year
+            default => [now()->subDays(6)->startOfDay(), now()->endOfDay()],
         };
     }
 
