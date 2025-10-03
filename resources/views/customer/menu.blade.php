@@ -7,6 +7,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Menu - Laidback Cafe</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+
     <script>
         tailwind.config = {
             theme: {
