@@ -27,7 +27,7 @@ class ProductController extends Controller
         return view('owner.products.index', compact('products', 'categories', 'search', 'category'));
     }
 
-    public function create()
+    public function create(): Factory|View
     {
         $categories = Category::all();
         return view('owner.products.create', compact('categories'));

@@ -1,140 +1,225 @@
-{{-- resources/views/owner/products/index.blade.php --}}
+{{-- resources/views/owner/products/edit.blade.php --}}
 @extends('layouts.owner')
 
 @section('content')
-<div class="flex items-center justify-between mb-8">
-    <div>
-        <h2 class="text-3xl font-bold text-gray-800 mb-2">Product Management</h2>
-        <p class="text-gray-600">Manage your menu items and inventory</p>
-    </div>
-    <a href="{{ route('owner.products.create') }}" class="px-6 py-3 bg-laidback-500 hover:bg-laidback-600 text-white font-bold rounded-xl transition flex items-center gap-2">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-        </svg>
-        Add Product
-    </a>
-</div>
-
-<!-- Filters -->
-<div class="bg-white rounded-2xl shadow-md p-6 mb-6">
-    <form method="GET" action="{{ route('owner.products.index') }}" class="flex gap-4">
-        <div class="flex-1">
-            <input 
-                type="text" 
-                name="search" 
-                placeholder="Search products..."
-                value="{{ $search }}"
-                class="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-laidback-500 outline-none"
-            >
-        </div>
-        <select name="category" class="px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-laidback-500 outline-none">
-            <option value="">All Categories</option>
-            @foreach($categories as $cat)
-                <option value="{{ $cat->id }}" {{ $category == $cat->id ? 'selected' : '' }}>
-                    {{ $cat->name }}
-                </option>
-            @endforeach
-        </select>
-        <button type="submit" class="px-6 py-2 bg-gray-800 hover:bg-gray-900 text-white font-semibold rounded-xl transition">
-            Filter
-        </button>
-        @if($search || $category)
-            <a href="{{ route('owner.products.index') }}" class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-xl transition">
-                Clear
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center gap-3 mb-2">
+            <a href="{{ route('owner.products.index') }}" class="p-2 hover:bg-gray-100 rounded-lg transition">
+                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
             </a>
-        @endif
+            <div>
+                <h2 class="text-3xl font-bold text-gray-800">Edit Product</h2>
+                <p class="text-gray-600">Update product information</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form action="{{ route('owner.products.update', $product->id) }}" method="POST" enctype="multipart/form-data">
+        @csrf
+        @method('PUT')
+        
+        <div class="bg-white rounded-2xl shadow-md p-8 space-y-6">
+            <!-- Product Image -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Product Image</label>
+                <div class="flex items-start gap-4">
+                    <div id="imagePreview" class="w-32 h-32 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl flex items-center justify-center text-4xl overflow-hidden">
+                        @if($product->image)
+                            <img src="{{ Storage::url($product->image) }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+                        @else
+                            {{ $product->category->icon ?? '🍽️' }}
+                        @endif
+                    </div>
+                    <div class="flex-1">
+                        <input 
+                            type="file" 
+                            name="image" 
+                            id="imageInput"
+                            accept="image/jpeg,image/png,image/jpg"
+                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-laidback-50 file:text-laidback-700 hover:file:bg-laidback-100 cursor-pointer"
+                        >
+                        <p class="text-xs text-gray-500 mt-2">JPG, JPEG or PNG. Max size 2MB</p>
+                        @if($product->image)
+                            <p class="text-xs text-gray-600 mt-1">Current: {{ basename($product->image) }}</p>
+                        @endif
+                        @error('image')
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Category *</label>
+                <select 
+                    name="category_id" 
+                    required
+                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-laidback-500 outline-none @error('category_id') border-red-500 @enderror"
+                >
+                    <option value="">Select a category</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category->id }}" {{ (old('category_id', $product->category_id) == $category->id) ? 'selected' : '' }}>
+                            {{ $category->icon }} {{ $category->name }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('category_id')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Product Name -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Product Name *</label>
+                <input 
+                    type="text" 
+                    name="name" 
+                    value="{{ old('name', $product->name) }}"
+                    required
+                    placeholder="e.g., Spicy Chicken Burger"
+                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-laidback-500 outline-none @error('name') border-red-500 @enderror"
+                >
+                @error('name')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                <textarea 
+                    name="description" 
+                    rows="4"
+                    placeholder="Describe your product..."
+                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-laidback-500 outline-none resize-none @error('description') border-red-500 @enderror"
+                >{{ old('description', $product->description) }}</textarea>
+                @error('description')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Price and Stock -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Price -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Price (Rp) *</label>
+                    <input 
+                        type="number" 
+                        name="price" 
+                        value="{{ old('price', $product->price) }}"
+                        required
+                        min="0"
+                        step="0.01"
+                        placeholder="25000"
+                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-laidback-500 outline-none @error('price') border-red-500 @enderror"
+                    >
+                    @error('price')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Stock -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Stock Quantity *</label>
+                    <input 
+                        type="number" 
+                        name="stock" 
+                        value="{{ old('stock', $product->stock) }}"
+                        required
+                        min="0"
+                        placeholder="100"
+                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-laidback-500 outline-none @error('stock') border-red-500 @enderror"
+                    >
+                    @error('stock')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            <!-- Availability -->
+            <div class="flex items-center gap-3">
+                <input 
+                    type="checkbox" 
+                    name="is_available" 
+                    id="is_available"
+                    value="1"
+                    {{ old('is_available', $product->is_available) ? 'checked' : '' }}
+                    class="w-5 h-5 text-laidback-500 border-2 border-gray-300 rounded focus:ring-laidback-500"
+                >
+                <label for="is_available" class="text-sm font-semibold text-gray-700">
+                    Mark as available for customers
+                </label>
+            </div>
+
+            <!-- Product Info Card -->
+            <div class="bg-gray-50 rounded-xl p-4 space-y-2">
+                <h4 class="font-semibold text-gray-700 text-sm">Product Information</h4>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-500">Created:</span>
+                        <span class="font-semibold text-gray-700 ml-2">{{ $product->created_at->format('d M Y') }}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Last Updated:</span>
+                        <span class="font-semibold text-gray-700 ml-2">{{ $product->updated_at->format('d M Y') }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-3 pt-4 border-t border-gray-200">
+                <button 
+                    type="submit"
+                    class="px-6 py-3 bg-laidback-500 hover:bg-laidback-600 text-white font-bold rounded-xl transition flex items-center gap-2"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Update Product
+                </button>
+                <a 
+                    href="{{ route('owner.products.index') }}"
+                    class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-xl transition"
+                >
+                    Cancel
+                </a>
+                <div class="flex-1"></div>
+                <form action="{{ route('owner.products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this product? This action cannot be undone.')">
+                    @csrf
+                    @method('DELETE')
+                    <button 
+                        type="submit"
+                        class="px-6 py-3 bg-red-100 hover:bg-red-200 text-red-600 font-bold rounded-xl transition flex items-center gap-2"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Delete Product
+                    </button>
+                </form>
+            </div>
+        </div>
     </form>
 </div>
 
-<!-- Products Table -->
-<div class="bg-white rounded-2xl shadow-md overflow-hidden">
-    @if($products->isEmpty())
-        <div class="text-center py-12">
-            <div class="text-6xl mb-4">📦</div>
-            <h3 class="text-xl font-bold text-gray-800 mb-2">No Products Found</h3>
-            <p class="text-gray-600 mb-4">Start by adding your first product</p>
-            <a href="{{ route('owner.products.create') }}" class="inline-block px-6 py-3 bg-laidback-500 hover:bg-laidback-600 text-white font-bold rounded-xl transition">
-                Add Product
-            </a>
-        </div>
-    @else
-        <table class="w-full">
-            <thead>
-                <tr class="bg-gray-50 border-b-2 border-gray-200">
-                    <th class="text-left py-4 px-6 font-semibold text-gray-700">Product</th>
-                    <th class="text-left py-4 px-6 font-semibold text-gray-700">Category</th>
-                    <th class="text-left py-4 px-6 font-semibold text-gray-700">Price</th>
-                    <th class="text-left py-4 px-6 font-semibold text-gray-700">Stock</th>
-                    <th class="text-left py-4 px-6 font-semibold text-gray-700">Status</th>
-                    <th class="text-left py-4 px-6 font-semibold text-gray-700">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($products as $product)
-                    <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                        <td class="py-4 px-6">
-                            <div class="flex items-center gap-3">
-                                @if($product->image)
-                                    <img src="{{ Storage::url($product->image) }}" alt="{{ $product->name }}" class="w-12 h-12 rounded-lg object-cover">
-                                @else
-                                    <div class="w-12 h-12 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg flex items-center justify-center text-2xl">
-                                        {{ $product->category->icon ?? '🍽️' }}
-                                    </div>
-                                @endif
-                                <div>
-                                    <p class="font-semibold text-gray-800">{{ $product->name }}</p>
-                                    <p class="text-sm text-gray-500">{{ Str::limit($product->description, 40) }}</p>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="py-4 px-6">
-                            <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-semibold">
-                                {{ $product->category->icon }} {{ $product->category->name }}
-                            </span>
-                        </td>
-                        <td class="py-4 px-6">
-                            <span class="font-bold text-gray-800">{{ $product->formatted_price }}</span>
-                        </td>
-                        <td class="py-4 px-6">
-                            <span class="font-semibold {{ $product->stock <= 10 ? 'text-red-600' : 'text-gray-800' }}">
-                                {{ $product->stock }}
-                            </span>
-                        </td>
-                        <td class="py-4 px-6">
-                            <form action="{{ route('owner.products.toggle', $product->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="px-3 py-1 {{ $product->is_available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }} rounded-full text-xs font-bold hover:opacity-80 transition">
-                                    {{ $product->is_available ? 'Available' : 'Unavailable' }}
-                                </button>
-                            </form>
-                        </td>
-                        <td class="py-4 px-6">
-                            <div class="flex items-center gap-2">
-                                <a href="{{ route('owner.products.edit', $product->id) }}" class="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                    </svg>
-                                </a>
-                                <form action="{{ route('owner.products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('Are you sure?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="p-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                        </svg>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-
-        <!-- Pagination -->
-        <div class="p-6">
-            {{ $products->links() }}
-        </div>
-    @endif
-</div>
+<!-- Image Preview Script -->
+<script>
+document.getElementById('imageInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = `<img src="${e.target.result}" alt="Preview" class="w-full h-full object-cover">`;
+        }
+        reader.readAsDataURL(file);
+    }
+});
+</script>
 @endsection
